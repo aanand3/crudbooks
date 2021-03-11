@@ -29,7 +29,7 @@ public class BookController
     {
         return repo.existsById(id) ?
                 repo.findById(id) :
-                "This book doesn't exist" ;
+                "There is no book with id " + id;
     }
 
     @PatchMapping("/{id}")

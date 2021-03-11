@@ -119,6 +119,25 @@ public class BookControllerTests
     @Transactional
     @Rollback
     @Test
+    public void tryToPatchIfDoesntExist() throws Exception
+    {
+        var patches = Map.of("name", "philosopher's stone",
+                            "publishDate", new Date());
+        ObjectMapper mapper = new ObjectMapper();
+
+        MockHttpServletRequestBuilder patchRequest = patch("/books/1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(mapper.writeValueAsString(patches));
+
+        mvc.perform(patchRequest)
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andExpect(jsonPath("$.name", is(patches.get("name"))));
+    }
+
+    @Transactional
+    @Rollback
+    @Test
     public void saveThreeBooksThenDeleteOne() throws Exception
     {
         Book newBook = new Book();
@@ -143,6 +162,78 @@ public class BookControllerTests
                 .andExpect(status().isOk())
                 .andDo(print())
                 .andExpect(content().string("Book 2 has been deleted - 2 remaining"));
+    }
+
+    @Transactional
+    @Rollback
+    @Test
+    public void postThreeBooksThenGetAll() throws Exception
+    {
+        Book newBook = new Book();
+        newBook.setName("sorcerer's stone");
+        newBook.setPublishDate(new Date());
+        repo.save(newBook);
+
+        Book newBook2 = new Book();
+        newBook2.setName("chamber of secrets");
+        newBook2.setPublishDate(new Date());
+        repo.save(newBook2);
+
+        Book newBook3 = new Book();
+        newBook3.setName("prisoner of azkaban");
+        newBook3.setPublishDate(new Date());
+        repo.save(newBook3);
+
+        MockHttpServletRequestBuilder getId2 = get("/books")
+                .contentType(MediaType.TEXT_PLAIN);
+
+        mvc.perform(getId2)
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andExpect(jsonPath("$[1].name", is(newBook2.getName())));
+    }
+
+    @Transactional
+    @Rollback
+    @Test
+    public void saveThreeBooksThenFailToDeleteOne() throws Exception
+    {
+        Book newBook = new Book();
+        newBook.setName("sorcerer's stone");
+        newBook.setPublishDate(new Date());
+        repo.save(newBook);
+
+        Book newBook2 = new Book();
+        newBook2.setName("chamber of secrets");
+        newBook2.setPublishDate(new Date());
+        repo.save(newBook2);
+
+        Book newBook3 = new Book();
+        newBook3.setName("prisoner of azkaban");
+        newBook3.setPublishDate(new Date());
+        repo.save(newBook3);
+
+        MockHttpServletRequestBuilder deleteRequest = delete("/books/20")
+                .contentType(MediaType.TEXT_PLAIN);
+
+        mvc.perform(deleteRequest)
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andExpect(content().string("There is no book with id 20"));
+    }
+
+    @Transactional
+    @Rollback
+    @Test
+    public void tryToGetBookThatDoesntExist() throws Exception
+    {
+        MockHttpServletRequestBuilder failingGetRequest = get("/books/20")
+                .contentType(MediaType.TEXT_PLAIN);
+
+        mvc.perform(failingGetRequest)
+                .andExpect(status().isOk())
+                .andDo(print())
+                .andExpect(content().string("There is no book with id 20"));
     }
 
 }
